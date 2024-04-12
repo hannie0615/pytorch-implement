@@ -80,9 +80,6 @@ print(model)
 
 # 4. Training
 # lr = 1e-3
-print(X[0])
-print(y[0])
-
 criterion = torch.nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 model.train()
@@ -104,7 +101,8 @@ num_batches = X.shape[0] // seq_length
 def detach(states):
     return [state.detach() for state in states]
 
-print(X[0:100])
+print(X[0:20])
+print(y[0:20])
 
 
 # Train the model
@@ -147,6 +145,7 @@ if not os.path.isfile('model_1.ckpt'):
 # test set에서 average preplexity 계산
 # cross entropy
 model = torch.load('model_1.ckpt')
+print("model is loaded")
 
 with torch.no_grad():
     correct = 0
