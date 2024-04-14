@@ -13,7 +13,7 @@ from model import *
 if not os.path.isfile('ptb.vocab'):
     spm.SentencePieceTrainer.Train('--input=dataset/ptb.train.txt '
                                '--model_prefix=ptb '
-                               '--vocab_size=68 '   # 5000에서 오류 남
+                               '--vocab_size=1024 '   # token : 1024
                                '--model_type=unigram '
                                '--max_sentence_length=9999')
 """
@@ -58,7 +58,7 @@ for i in range(0, len(encoded_train)):
 sequences = np.array(sequences)
 
 from keras.utils import to_categorical
-X, y = sequences[:,0], sequences[:,1]
+X, y = sequences[:, 0], sequences[:, 1]
 # y = to_categorical(y, num_classes=68)
 y = torch.from_numpy(y)
 X = torch.from_numpy(X)
@@ -74,7 +74,7 @@ print(f"y.shape : {y.shape}")
 device = torch.device("mps") if torch.backends.mps.is_available() else "cpu"
 print(f"device: {device}")
 
-model = Decoder(vocab_size=68, embed_size=256, hidden_size=256, num_layers=3).to(device)
+model = Decoder(vocab_size=1024, embed_size=256, hidden_size=256, num_layers=3).to(device)
 print(model)
 
 
@@ -104,9 +104,10 @@ def detach(states):
 print(X[0:20])
 print(y[0:20])
 
+model_file = 'model_1.ckpt'
 
 # Train the model
-if not os.path.isfile('model_1.ckpt'):
+if not os.path.isfile(model_file):
     for epoch in range(num_epochs):
         # Set initial hidden and cell states
         states = (torch.zeros(num_layers, batch_size, hidden_size).to(device),
@@ -136,7 +137,7 @@ if not os.path.isfile('model_1.ckpt'):
                       .format(epoch + 1, num_epochs, step, num_batches, loss.item(), np.exp(loss.item())))
 
     # Save the model checkpoints
-    torch.save(model.state_dict(), 'model_1.ckpt')
+    torch.save(model.state_dict(), model_file)
 
 
 
@@ -144,7 +145,7 @@ if not os.path.isfile('model_1.ckpt'):
 # 5. Evaluation
 # test set에서 average preplexity 계산
 # cross entropy
-model = torch.load('model_1.ckpt')
+model = torch.load(model_file)
 print("model is loaded")
 
 with torch.no_grad():
