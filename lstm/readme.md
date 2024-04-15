@@ -5,7 +5,7 @@
 ```
 # 1. python.org에서 버전 설치
 > which python
-> echo 
+> echo ~
 
 # 2. pip 버전 설정
 > which pip3    # /usr/local/bin/pip3
@@ -16,7 +16,7 @@
 ### 가상환경(venv) 설정하기
 ~~~
 > pip install sentencepiece
-> pip install pandas numpy torch
-> pip install tensorflow keras
+> pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+> pip install pandas numpy tensorflow keras
 ~~~
 

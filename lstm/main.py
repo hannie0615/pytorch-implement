@@ -59,29 +59,60 @@ sequences = np.array(sequences)
 
 from keras.utils import to_categorical
 X, y = sequences[:, 0], sequences[:, 1]
-# y = to_categorical(y, num_classes=68)
 y = torch.from_numpy(y)
 X = torch.from_numpy(X)
 print(f"y.shape : {y.shape}")
-# 텐서화
 
+
+# test 데이터셋
+path = "dataset/ptb.test.txt"
+f = open(path, 'r')
+lines = []
+while True:
+    line = f.readline()
+    if not line:
+        break
+    lines.append(line)
+f.close()
+
+testencoded = []
+for line in lines:
+    testencoded.append(sp.encode_as_ids(line))
+
+sequences = []
+for i in range(0, len(testencoded)):
+    for j in range(1, len(testencoded[i])):
+        if len(testencoded[i]) > 1:
+            sequence = testencoded[i][j-1:j+1]
+            sequences.append(sequence)
+sequences = np.array(sequences)
+test_X, test_y = sequences[:, 0], sequences[:, 1]
+test_X = np.expand_dims(test_X, axis=0)
+test_y = np.expand_dims(test_y, axis=0)
+test_X = torch.from_numpy(test_X)
+test_y = torch.from_numpy(test_y)
 
 
 # 3. 디코더 모델 build, file save
 # using pytorch and keras
 # LSTM and Transformer
 # dim=256, layer=3, transformer head=4
-device = torch.device("mps") if torch.backends.mps.is_available() else "cpu"
+if os.name == 'nt':     # Windows
+    device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
+elif os.name == 'posix':        # Mac, Linux
+    device = torch.device("mps") if torch.backends.mps.is_available() else "cpu"
+else:
+    print("Unsupported operating")
 print(f"device: {device}")
 
-model = Decoder(vocab_size=1024, embed_size=256, hidden_size=256, num_layers=3).to(device)
+model = DecoderRNN(vocab_size=1024, embed_size=256, hidden_size=256, num_layers=3).to(device)
 print(model)
 
 
 # 4. Training
 # lr = 1e-3
 criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
 model.train()
 
 # input = torch.Tensor([7.0, 5.0])
@@ -90,7 +121,7 @@ model.train()
 # print(loss)
 
 # hyper parameters
-num_epochs = 5
+num_epochs = 100
 num_layers = 3
 batch_size = 64
 hidden_size = 256
@@ -101,10 +132,7 @@ num_batches = X.shape[0] // seq_length
 def detach(states):
     return [state.detach() for state in states]
 
-print(X[0:20])
-print(y[0:20])
-
-model_file = 'model_1.ckpt'
+model_file = 'model_30.ckpt'
 
 # Train the model
 if not os.path.isfile(model_file):
@@ -141,20 +169,36 @@ if not os.path.isfile(model_file):
 
 
 
-
 # 5. Evaluation
 # test set에서 average preplexity 계산
 # cross entropy
-model = torch.load(model_file)
+model.load_state_dict(torch.load(model_file))
 print("model is loaded")
 
+# Test the model
+cnt = 0
 with torch.no_grad():
-    correct = 0
-    total = 0
-    # test dataset 먼저 만들기
+    model.eval()
+
+    state = (torch.zeros(num_layers, 1, hidden_size).to(device), torch.zeros(num_layers, 1, hidden_size).to(device))
+    input = test_X[0].unsqueeze(1).to(device)
+
+    for i in range(test_y.shape[1]-1):
+        output, state = model(input[i].unsqueeze(1), state)
+        prob = output.exp()
+
+        if prob.argmax().item() == int(input[i+1].item()):
+            cnt += 1
+
+        # if i % 1000==0:
+        #     print(input[i].item(), prob.argmax().item())
+
+print(cnt)
+print(test_y.shape[1])
 
 
 # 6. 제출: ptb.vocab, model file, LSTM과 Transformer 모델 비교 리포트, training과 evaluation 코드
+
 
 
 
