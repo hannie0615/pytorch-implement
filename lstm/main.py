@@ -87,8 +87,6 @@ for i in range(0, len(testencoded)):
             sequences.append(sequence)
 sequences = np.array(sequences)
 test_X, test_y = sequences[:, 0], sequences[:, 1]
-test_X = np.expand_dims(test_X, axis=0)
-test_y = np.expand_dims(test_y, axis=0)
 test_X = torch.from_numpy(test_X)
 test_y = torch.from_numpy(test_y)
 
@@ -111,8 +109,8 @@ print(model)
 
 # 4. Training
 # lr = 1e-3
-criterion = torch.nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
+criterion = F.cross_entropy
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 model.train()
 
 # input = torch.Tensor([7.0, 5.0])
@@ -121,7 +119,7 @@ model.train()
 # print(loss)
 
 # hyper parameters
-num_epochs = 100
+num_epochs = 30
 num_layers = 3
 batch_size = 64
 hidden_size = 256
@@ -179,28 +177,39 @@ print("model is loaded")
 cnt = 0
 with torch.no_grad():
     model.eval()
+    test_loss = 0
+    test_perplexity = 0
 
-    state = (torch.zeros(num_layers, 1, hidden_size).to(device), torch.zeros(num_layers, 1, hidden_size).to(device))
-    input = test_X[0].unsqueeze(1).to(device)
+    states = (torch.zeros(num_layers, batch_size, hidden_size).to(device),
+              torch.zeros(num_layers, batch_size, hidden_size).to(device))
+    states = detach(states)
+    # input = test_X[0].unsqueeze(1).to(device)
 
-    for i in range(test_y.shape[1]-1):
-        output, state = model(input[i].unsqueeze(1), state)
-        prob = output.exp()
+    for i in range(0, test_y.shape[0], batch_size):
+        input = test_X[i:i+batch_size].to(device)
+        output, states = model(input.unsqueeze(1), states)  # torch.Size([64, 1024])
+        target = test_y[i:i+batch_size].to(device)      # torch.Size([64])
 
-        if prob.argmax().item() == int(input[i+1].item()):
-            cnt += 1
+        loss = criterion(output, target)
+        test_loss += loss
+        test_perplexity += torch.exp(loss)
 
-        # if i % 1000==0:
-        #     print(input[i].item(), prob.argmax().item())
+        if i % 1000 == 0:
+            print('Test Progress[{}/{}], Loss: {:.4f}, Perplexity: {:.4f}'
+                  .format(i, test_y.shape[0], loss, torch.exp(loss)))
 
-print(cnt)
-print(test_y.shape[1])
-
-
-# 6. 제출: ptb.vocab, model file, LSTM과 Transformer 모델 비교 리포트, training과 evaluation 코드
-
+step = len(test_X)/batch_size
+print(f"test loss : {(test_loss/step).item()}")
+print(f"test perplexity : {(test_perplexity/step).item()}")
 
 
+# 6. 제출: ptb.vocab, model file, LSTM과 Transformer 모델 비교 리포트, train과 evaluation 코드
+
+
+"""
+test loss : 4.652682304382324
+test perplexity : 131.58116149902344
+"""
 
 
 
