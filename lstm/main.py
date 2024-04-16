@@ -106,6 +106,7 @@ print(f"device: {device}")
 model = DecoderRNN(vocab_size=1024, embed_size=256, hidden_size=256, num_layers=3).to(device)
 print(model)
 
+print('Total parameters in model: {:,}'.format(get_total_params(model)))
 
 # 4. Training
 # lr = 1e-3
@@ -204,6 +205,8 @@ print(f"test perplexity : {(test_perplexity/step).item()}")
 
 
 # 6. 제출: ptb.vocab, model file, LSTM과 Transformer 모델 비교 리포트, train과 evaluation 코드
+
+
 
 
 """

@@ -14,6 +14,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import tensorflow as tf
 
+def get_total_params(module: torch.nn.Module):
+    total_params = 0
+    for param in module.parameters():
+        total_params += param.numel()
+    return total_params
+
 
 # RNN based language model
 class DecoderRNN(nn.Module):
@@ -42,9 +48,10 @@ class DecoderRNN(nn.Module):
 # Transformer based model
 # 포지셔널 인코딩
 class PositionalEncoding(nn.Module):
-    def __init__(self, dim_model, max_len):
+    def __init__(self, dim_model=256, dropout_p=0.5, max_len=9999):
         super().__init__()
         # 드롭 아웃
+        self.dropout = nn.Dropout(dropout_p)
 
         # Encoding - From formula
         pos_encoding = torch.zeros(max_len, dim_model)
@@ -60,25 +67,22 @@ class PositionalEncoding(nn.Module):
 
     def forward(self, token_embedding: torch.tensor) -> torch.tensor:
         # Residual connection + pos encoding
-        return token_embedding + self.pos_encoding[:token_embedding.size(0), :]
+        return self.dropout(token_embedding + self.pos_encoding[:token_embedding.size(0), :])
 
-class Transformer(nn.Module):
+class TransformerDecoder(nn.Module):
     # Constructor
-    def __init__( self, num_tokens, dim_model, num_heads, num_decoder_layers):
+    def __init__( self, num_tokens, dim_model, num_heads):
         super().__init__()
 
         # INFO
-        self.model_type = "Transformer"
+        self.model_type = "Transformer Deocder"
         self.dim_model = dim_model
 
         # LAYERS
-        self.positional_encoder = PositionalEncoding(dim_model=dim_model, max_len=5000)
+        self.positional_encoder = PositionalEncoding(dim_model=dim_model, dropout_p=0.5, max_len=5000)
         self.embedding = nn.Embedding(num_tokens, dim_model)
-        self.transformer = nn.Transformer(
-            d_model=dim_model,
-            nhead=num_heads,
-            num_decoder_layers=num_decoder_layers
-        )
+        self.decoder_layer = nn.TransformerDecoderLayer(d_model=dim_model, nhead=num_heads)
+        self.decoder = nn.TransformerDecoder(self.decoder_layer, num_layers=3)
         self.out = nn.Linear(dim_model, num_tokens)
 
     def forward(self, src, tgt, tgt_mask=None, src_pad_mask=None, tgt_pad_mask=None):
@@ -94,7 +98,7 @@ class Transformer(nn.Module):
         tgt = tgt.permute(1,0,2)
 
         # Transformer blocks - Out size = (sequence length, batch_size, num_tokens)
-        transformer_out = self.transformer(src, tgt, tgt_mask=tgt_mask, src_key_padding_mask=src_pad_mask, tgt_key_padding_mask=tgt_pad_mask)
+        transformer_out = self.decoder(src, tgt, tgt_mask=tgt_mask)
         out = self.out(transformer_out)
 
         return out
@@ -109,4 +113,5 @@ class Transformer(nn.Module):
 
     def create_pad_mask(self, matrix: torch.tensor, pad_token: int) -> torch.tensor:
         return (matrix == pad_token)
+
 

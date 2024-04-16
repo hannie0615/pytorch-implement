@@ -97,49 +97,64 @@ else:
     print("Unsupported operating")
 print(f"device: {device}")
 
-model = Transformer(num_tokens=1024, dim_model=256, num_heads=4, num_decoder_layers=3).to(device)
+# Model
+model = TransformerDecoder(num_tokens=1024, dim_model=256, num_heads=4).to(device)
 print(f"model: {model}")
 
+print('Total parameters in model: {:,}'.format(get_total_params(model)))
 
 # Train model
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-# opt = torch.optim.SGD(model.parameters(), lr=0.01)
-# loss_fn = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 model.train()
 total_loss = 0
-num_epochs = 30
+num_epochs = 10
 num_layers = 3
 batch_size = 64
 hidden_size = 256
 num_steps = 20
+vocab = 1024
 
 
 for epoch in range(num_epochs):
-    for i in range(1, X.shape[0]-1, batch_size):
-        print(i)
-        X, y = X[i:i + batch_size], y[i:i + batch_size]
-        X, y = X.to(device), y.to(device)
+    model.train()
+    total_loss = 0
+
+    for i in range(batch_size*num_steps, X.shape[0]-646, batch_size*num_steps):
+        inputs = X[i:i + batch_size*num_steps].to(device)
+        targets = y[i:i + batch_size*num_steps].to(device).long()
+        inputs = inputs.reshape(batch_size, num_steps)  # X
+        targets = targets.reshape(batch_size, num_steps)    # y
 
         # 이제 tgt를 1만큼 이동하여 <SOS>를 사용하여 pos 1에서 토큰을 예측합니다.
-        # y_input = y[:,:-1]
-        # y_expected = y[:,1:]
+        y_input = y[i-batch_size*num_steps:i].to(device)
+        y_input = y_input.reshape(batch_size, num_steps)
 
         # 다음 단어를 마스킹하려면 마스크 가져오기
-        # sequence_length = y_input.size(1)
-        y_in = torch.zeros(batch_size).to(device)
-        tgt_mask = model.get_tgt_mask(batch_size).to(device)
+        sequence_length = y_input.size(1)
+        tgt_mask = model.get_tgt_mask(sequence_length).to(device)
 
         # X, y_input 및 tgt_mask를 전달하여 표준 training
-        pred = model(X, y_in, tgt_mask)
-        loss = criterion(pred[0], y)
+        pred = model(inputs, y_input, tgt_mask)
+
+        # Permute 를 수행하여 batch size 가 처음이 되도록
+        pred = pred.permute(1, 2, 0)
+        loss = criterion(pred, targets)
 
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
-        # total_loss += loss.detach().item()
+        total_loss += loss.detach().item()
+
         if i % 1000 == 0:
             print('Epoch [{}/{}], Step[{}/{}], Loss: {:.4f}, Perplexity: {:5.2f}'
-                  .format(epoch, num_epochs, i+1, X.shape[0], loss.item(), np.exp(loss.item())))
+                  .format(epoch + 1, num_epochs, i, X.shape[0], loss.item(), np.exp(loss.item())))
+
+        # Save the model checkpoints
+    torch.save(model.state_dict(), "transformer.ckpt")
+
+
+# Epoch [10/10], Step[1728000/1768326], Loss: 5.5138, Perplexity: 248.10
+# Epoch [10/10], Step[1760000/1768326], Loss: 5.2184, Perplexity: 184.64

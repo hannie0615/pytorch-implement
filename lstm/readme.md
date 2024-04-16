@@ -17,6 +17,18 @@
 ~~~
 > pip install sentencepiece
 > pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-> pip install pandas numpy tensorflow keras
+> pip install pandas numpy tensorflow keras einops
 ~~~
 
+### 결과
+~~~
+# LSTM
+Total parameters in model: 2,104,320
+test loss : 4.652682304382324
+test perplexity : 131.58116149902344
+
+# Transformer
+Total parameters in model: 6,840,320
+
+
+~~~
