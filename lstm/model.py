@@ -81,7 +81,7 @@ class TransformerDecoder(nn.Module):
         # LAYERS
         self.positional_encoder = PositionalEncoding(dim_model=dim_model, dropout_p=0.5, max_len=5000)
         self.embedding = nn.Embedding(num_tokens, dim_model)
-        self.decoder_layer = nn.TransformerDecoderLayer(d_model=dim_model, nhead=num_heads)
+        self.decoder_layer = nn.TransformerDecoderLayer(d_model=dim_model, nhead=num_heads, dropout=0)
         self.decoder = nn.TransformerDecoder(self.decoder_layer, num_layers=3)
         self.out = nn.Linear(dim_model, num_tokens)
 
