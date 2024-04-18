@@ -7,7 +7,9 @@ description : LSTM decoder
 
 import sentencepiece as spm
 import pandas as pd
+import os
 import csv
+import torch.nn.functional as F
 import utils
 from model import *
 
@@ -46,7 +48,7 @@ test_X, test_y = utils.data_loader(test_data_path, vocab_file=sp)
 ### MAIN CODE START ###
 
 
-# 3. LSTM 디코더 모델 build
+# 3. LSTM 디코더 모델 build, parameter 설정
 device = utils.cuda_test()
 model = DecoderRNN(vocab_size=1024, embed_size=256, hidden_size=256, num_layers=3).to(device)
 print(f'model : {model}')
@@ -55,8 +57,6 @@ print(f'model : {model}')
 print('Total parameters in model: {:,}'.format(get_total_params(model)))
 
 
-
-# 4. Train the model
 criterion = F.cross_entropy
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
 model.train()
@@ -71,9 +71,8 @@ seq_length = batch_size*num_steps
 num_batches = train_X.shape[0] // seq_length
 
 
-def detach(states):
-    return [state.detach() for state in states]
 
+# 4. Train the model
 model_file = 'model_30.ckpt'
 
 # train the model
@@ -91,7 +90,7 @@ if not os.path.isfile(model_file):
             targets = targets.reshape(batch_size, num_steps)
 
             # Forward pass
-            states = detach(states)
+            states = utils.detach(states)
             outputs, states = model(inputs, states)
             loss = criterion(outputs, targets.reshape(-1))
 
@@ -110,7 +109,7 @@ if not os.path.isfile(model_file):
 
 
 
-# 5. Evaluation
+# 5. Evaluation test dataset 평가
 model.load_state_dict(torch.load(model_file))
 print("model is loaded")
 
@@ -122,7 +121,7 @@ with torch.no_grad():
 
     states = (torch.zeros(num_layers, batch_size, hidden_size).to(device),
               torch.zeros(num_layers, batch_size, hidden_size).to(device))
-    states = detach(states)
+    states = utils.detach(states)
     # input = test_X[0].unsqueeze(1).to(device)
 
     for i in range(0, test_y.shape[0], batch_size):

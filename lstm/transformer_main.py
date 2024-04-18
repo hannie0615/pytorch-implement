@@ -10,6 +10,8 @@ import pandas as pd
 import csv
 import utils
 from model import *
+import os
+
 
 # 1. 토큰화(sentencepiece.unigram)
 if not os.path.isfile('ptb.vocab'):
@@ -50,9 +52,8 @@ print('Total parameters in model: {:,}'.format(get_total_params(model)))
 
 
 # 4. Train the model
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
+## Parmaeter
 num_epochs = 30
 num_layers = 3
 batch_size = 64
@@ -61,6 +62,8 @@ num_steps = 20
 vocab = 1024
 total_loss = 0
 model_file = 'transformer_30.ckpt'
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
 if not os.path.isfile(model_file):
     for epoch in range(num_epochs):
