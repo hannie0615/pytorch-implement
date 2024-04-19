@@ -2,10 +2,10 @@ import math
 import numpy as np
 import random
 
-np.random.seed(42)
+
 
 def generate_data(num):
-
+    np.random.seed(42)
     x = np.random.rand(num) * 2 - 1  # the range of [−1, 1]
 
     # t = cos (2πx) + sin (πx) + ϵ
