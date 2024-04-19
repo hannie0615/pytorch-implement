@@ -58,7 +58,7 @@ print('Total parameters in model: {:,}'.format(get_total_params(model)))
 
 
 criterion = F.cross_entropy
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 model.train()
 
 # hyper parameters
@@ -73,7 +73,7 @@ num_batches = train_X.shape[0] // seq_length
 
 
 # 4. Train the model
-model_file = 'model_30.ckpt'
+model_file = 'lstm_model.ckpt'
 
 # train the model
 if not os.path.isfile(model_file):

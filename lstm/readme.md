@@ -7,7 +7,8 @@
 > pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 > pip install pandas numpy tensorflow keras einops
 ~~~
-
+  
+---
 
 ### 실행 순서
 ~~~
@@ -18,6 +19,18 @@
 > python lstm_main.py   # lstm
 > python transformer_main.py    # transformer
 ~~~
+
+
+  
+---
+
+### 작성 과정
+
+lstm에서는 learning rate를 기본값(1e-3)에서 올렸을 때
+손실이 더욱 커져 기본값을 유지하고  
+transformer에서는 학습에 정체가 있어 기본값에서 0.01로 올려주었습니다.
+
+
 
 ### 결과(Output)
 ~~~
